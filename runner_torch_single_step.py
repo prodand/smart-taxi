@@ -1,34 +1,13 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import sys
-import time
-
 import gym
 import numpy as np
+import time
 
-import tensorflow as tf
-from tensorflow_core.python.keras.layers.core import Dense, Activation
-from tensorflow_core.python.keras.models import Sequential
-import tensorflow_core.python.keras.backend as K
-
-
-def custom_loss(y_actual, y_predicted):
-    return y_actual * K.log(y_predicted)
-
+from network import Network
 
 INPUT_SIZE = 29
-model = Sequential()
-model.add(Dense(60, input_dim=INPUT_SIZE))
-model.add(Activation('sigmoid'))
-model.add(Dense(6))
-model.add(Activation('softmax'))
-model.compile(optimizer='adam',
-              loss=custom_loss,
-              metrics=['accuracy'])
-env = gym.make("Taxi-v3").env
 
 
-def build_input(environment, state, prev_position):
+def build_input(environment, state, prev_position, ):
     # 25 for each position, 1 - for passenger location, 1 - for destination
     # 1 - last action, 1 - previous location
     env_vector = np.zeros(INPUT_SIZE, dtype=int)
@@ -39,6 +18,8 @@ def build_input(environment, state, prev_position):
     env_vector[26] = dest + 1
     env_vector[27] = 0 if env.lastaction is None else env.lastaction + 1
     env_vector[28] = prev_position
+    env_vector[29] = prev_position
+    env_vector[30] = prev_position
     return env_vector, taxi_pos
 
 
@@ -59,33 +40,30 @@ def prepare_labels(episode_rewards):
     return fake_labels
 
 
-val = env.render(mode='ansi')
+if __name__ == '__main__':
+    network = Network(INPUT_SIZE)
+    env = gym.make("Taxi-v3").env
+    env.render()
 
-for i in range(1000000):
     new_state = env.s
     done = False
-    k = 0
-    frame, last_position = build_input(env, new_state, 0)
-    samples = frame.reshape((1, INPUT_SIZE))
-    rewards = list()
-    while not done and k < 50:
+    last_position = 0
+    while not done:
+        tmp_last_loc = last_position
+
+        frame, last_position = build_input(env, new_state, last_position)
+        rewards = list()
         prev_act = env.lastaction
 
-        action = model.predict(frame.reshape((1, INPUT_SIZE)), batch_size=1)
+        action = network.predict(frame.reshape((1, INPUT_SIZE)))
         max_action = np.argmax(action)
         new_state, reward, done, info = env.step(max_action)
 
         rewards.append((max_action, reward))
 
-        tmp_last_loc = last_position
-        frame, last_position = build_input(env, new_state, last_position)
-        samples = np.concatenate((samples, frame.reshape(1, INPUT_SIZE)), axis=0)
-
-        k += 1
         if max_action != prev_act or last_position != tmp_last_loc:
+            print()
             env.render()
-            time.sleep(0.5)
+            time.sleep(1)
 
-    model.fit(samples[0:-1, :], prepare_labels(rewards))
-    env.reset()
-    time.sleep(1.5)
+        network.fit(frame.reshape(1, INPUT_SIZE), prepare_labels(rewards))
