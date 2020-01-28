@@ -1,8 +1,9 @@
-import gym
-import numpy as np
 import time
 
-from network import Network
+import gym
+import numpy as np
+
+from conv_network import ConvNetwork
 
 INPUT_SIZE = 34
 
@@ -15,8 +16,6 @@ def build_input(environment, state, prev_position):
     env_vector[taxi_pos] = 1
     env_vector[25 + pass_loc] = 1
     env_vector[30 + dest] = 1
-    # env_vector[27] = 0 if env.lastaction is None else env.lastaction + 1
-    # env_vector[28] = prev_position
     return env_vector, taxi_pos
 
 
@@ -29,7 +28,9 @@ def prepare_labels(episode_rewards):
         discounted_rewards[len(episode_rewards) - index - 1] = discounted_reward
 
     # discounted_rewards = discounted_rewards / 10
-    discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-16)
+    # center = (discounted_rewards.max() + discounted_rewards.min()) / 2
+    # discounted_rewards = (discounted_rewards - center)
+    # discounted_rewards = (discounted_rewards - center) / (discounted_rewards.std() + 1e-16)
     fake_labels = np.zeros((len(episode_rewards), 6))
     for index, (act, rw) in enumerate(episode_rewards):
         value = np.zeros(6, dtype=float)
@@ -39,7 +40,7 @@ def prepare_labels(episode_rewards):
 
 
 if __name__ == '__main__':
-    network = Network(INPUT_SIZE)
+    network = ConvNetwork(INPUT_SIZE)
     env = gym.make("Taxi-v3").env
     env.render()
 
@@ -64,10 +65,10 @@ if __name__ == '__main__':
 
             k += 1
             if max_action != prev_act or last_position != tmp_last_loc or k > 8:
-                print(action)
+                print(action.reshape(6))
                 env.render()
                 time.sleep(1)
 
         network.fit_single(samples[0:-1, :], prepare_labels(rewards))
-        time.sleep(2)
+        time.sleep(1)
         print("\n\n\n\n====New Round====")
