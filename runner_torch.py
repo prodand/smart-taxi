@@ -28,8 +28,8 @@ def prepare_labels(episode_rewards):
         discounted_reward = rw + discounted_reward * gamma
         discounted_rewards[len(episode_rewards) - index - 1] = discounted_reward
 
-    discounted_rewards = discounted_rewards / 10
-    # discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-16)
+    # discounted_rewards = discounted_rewards / 10
+    discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-16)
     fake_labels = np.zeros((len(episode_rewards), 6))
     for index, (act, rw) in enumerate(episode_rewards):
         value = np.zeros(6, dtype=float)
@@ -68,6 +68,6 @@ if __name__ == '__main__':
                 env.render()
                 time.sleep(1)
 
-        network.fit(samples[0:-1, :], prepare_labels(rewards))
+        network.fit_single(samples[0:-1, :], prepare_labels(rewards))
         time.sleep(2)
         print("\n\n\n\n====New Round====")

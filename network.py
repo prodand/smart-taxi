@@ -34,5 +34,20 @@ class Network:
         for f in self.model.parameters():
             f.data.add_(f.grad.data * learning_rate)
 
+    def fit_single(self, train_data, target):
+        tensor_data = tr.from_numpy(train_data).float()
+        tensor_target = tr.from_numpy(target)
+        for i in range(len(tensor_data)):
+            output = self.model(tensor_data[i:i + 1, :])
+
+            self.model.zero_grad()
+            loss = self.loss_simple(output, tensor_target[i:i + 1, :])
+            loss.backward()
+            # output.backward(tensor_target[i:i + 1, :])
+
+            learning_rate = 0.01
+            for f in self.model.parameters():
+                f.data.sub_(f.grad.data * learning_rate)
+
     def loss_simple(self, predicted, target):
         return tr.sum(-tr.log(predicted) * target, dim=1).mean()
