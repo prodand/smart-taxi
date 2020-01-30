@@ -2,7 +2,6 @@ import gym
 import numpy as np
 
 from dqn_network import DqnNetwork
-from runner_torch import build_input
 
 INPUT_SIZE = 34
 env = gym.make("Taxi-v3").env
@@ -24,6 +23,17 @@ def prepare_labels(episode_rewards):
     return fake_labels
 
 
+def build_input(environment, state):
+    # 25 for each position, 5 - for passenger location, 4 - for destination
+    env_vector = np.zeros(INPUT_SIZE, dtype=int)
+    taxi_row, taxi_col, pass_loc, dest = environment.decode(state)
+    taxi_pos = taxi_row * 5 + taxi_col
+    env_vector[taxi_pos] = 1
+    env_vector[25 + pass_loc] = 5
+    env_vector[30 + dest] = 20
+    return env_vector
+
+
 def calculate_reward(old_state, new_state, steps):
     if old_state == new_state:
         return -1, True
@@ -39,16 +49,15 @@ def calculate_reward(old_state, new_state, steps):
 if __name__ == '__main__':
     network = DqnNetwork(INPUT_SIZE)
 
+    env.reset()
+    new_state = env.s
+    env.render()
     while True:
-        env.reset()
-        new_state = env.s
         k = 0
-        frame, tmp = build_input(env, new_state)
-        samples = frame.reshape((1, INPUT_SIZE))
-        rewards = list()
+        frame = build_input(env, new_state)
         end = False
         print("----NEW ROUND----")
-        env.render()
+        my_reward = 0
         while not end:
             action = network.predict(frame)
             max_action = np.argmax(action)
@@ -56,13 +65,12 @@ if __name__ == '__main__':
             new_state, reward, done, info = env.step(max_action)
             k += 1
             my_reward, end = calculate_reward(old_state, new_state, k)
+
             print(action, my_reward)
             env.render()
 
-            rewards.append((max_action, my_reward))
-
-            frame, tmp = build_input(env, new_state)
-            samples = np.concatenate((samples, frame.reshape(1, INPUT_SIZE)), axis=0)
-
-        env.render()
-        network.fit(samples[0:-1, :], prepare_labels(rewards))
+            frame = build_input(env, new_state)
+            network.train(build_input(env, old_state), frame, my_reward, max_action)
+        if my_reward == 1:
+            new_state = env.s
+            env.reset()
