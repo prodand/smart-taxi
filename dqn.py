@@ -40,13 +40,13 @@ if __name__ == '__main__':
     network = DqnNetwork(INPUT_SIZE)
 
     while True:
+        env.reset()
         new_state = env.s
         k = 0
         frame, tmp = build_input(env, new_state)
         samples = frame.reshape((1, INPUT_SIZE))
         rewards = list()
         end = False
-        env.reset()
         print("----NEW ROUND----")
         env.render()
         while not end:
