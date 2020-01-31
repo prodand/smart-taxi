@@ -30,7 +30,7 @@ class DqnNetwork:
         )
 
     def predict(self, data):
-        return self.model(tr.from_numpy(data).float().reshape((1, 1, self.input_size)))\
+        return self.model(tr.from_numpy(data).float().reshape((1, 1, self.input_size))) \
             .detach().numpy().reshape(ACTION_SIZE)
 
     def train(self, old_state, new_state, reward, action):
@@ -42,23 +42,29 @@ class DqnNetwork:
         self.critic_model.zero_grad()
         q_value_old.backward(advantage.clone().detach())
         for f in self.critic_model.parameters():
-            f.data.add_(f.grad.data * 0.1)
+            f.data.add_(f.grad.data * 0.01)
 
         output = self.model(tensor_data)
-        loss = self.gradient(output, self.create_advantage_vector(advantage.clone().detach(), action))
+        loss = self.gradient(output, self.create_hot_encoded_vector(advantage.clone().detach(), action))
         self.model.zero_grad()
         loss.backward()
         for f in self.model.parameters():
-            f.data.add_(f.grad.data * 0.1)
+            f.data.add_(f.grad.data * 0.01)
+
+        output = self.model(tensor_data)
 
     def create_tensor(self, data):
         return tr.from_numpy(data).float().reshape((1, 1, self.input_size))
 
-    def create_advantage_vector(self, advantage, action):
+    def create_hot_encoded_vector(self, advantage, action):
         vector = tr.zeros(ACTION_SIZE)
         vector[action] = advantage.max()
         return vector
 
+    def create_entropy(self, predicted):
+        return tr.sum(tr.log(predicted.max(1)[0]) * predicted.max(1)[0])
+
     def gradient(self, predicted, q_value):
         shape = predicted.shape
-        return tr.sum(tr.log(predicted).reshape((shape[0], shape[1])) * q_value)
+        entropy = self.create_entropy(predicted.clone().detach())
+        return tr.sum(tr.log(predicted).reshape((shape[0], shape[1])) * q_value) + entropy
