@@ -67,4 +67,4 @@ class DqnNetwork:
     def gradient(self, predicted, q_value):
         shape = predicted.shape
         entropy = self.create_entropy(predicted.clone().detach())
-        return tr.sum(tr.log(predicted).reshape((shape[0], shape[1])) * q_value) + entropy
+        return tr.sum(-tr.log(predicted).reshape((shape[0], shape[1])) * q_value) + 1 # + entropy
