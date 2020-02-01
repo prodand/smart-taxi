@@ -15,11 +15,12 @@ class DqnNetwork:
     def __init__(self, input_size):
         self.input_size = input_size
         self.model = nn.Sequential(
-            nn.Conv1d(1, ACTION_SIZE, input_size),
+            nn.Conv1d(1, 8, input_size),
+            nn.ReLU(),
+            Flatten(),
+            nn.Linear(8, 4),
             nn.Sigmoid(),
-            # Flatten(),
-            # nn.Linear(4, 4),
-            # nn.Sigmoid()
+            nn.Linear(4, 4),
             nn.Softmax(dim=1)
         )
         self.critic_model = nn.Sequential(
@@ -37,7 +38,7 @@ class DqnNetwork:
         tensor_data = self.create_tensor(old_state)
 
         q_value_old = self.critic_model(tensor_data.clone().detach())
-        q_value_new = self.critic_model(self.create_tensor(new_state)) if reward != -1 else 0
+        q_value_new = self.critic_model(self.create_tensor(new_state)) # if reward != -1 else 0
         advantage = (reward + 0.9 * q_value_new) - q_value_old
         self.critic_model.zero_grad()
         q_value_old.backward(advantage.clone().detach())
@@ -47,7 +48,7 @@ class DqnNetwork:
         output = self.model(tensor_data)
         loss = self.gradient(output, self.create_hot_encoded_vector(advantage.clone().detach(), action))
         self.model.zero_grad()
-        loss.backward()
+        output.backward(loss)
         for f in self.model.parameters():
             f.data.add_(f.grad.data * 0.01)
 
@@ -57,14 +58,14 @@ class DqnNetwork:
         return tr.from_numpy(data).float().reshape((1, 1, self.input_size))
 
     def create_hot_encoded_vector(self, advantage, action):
-        vector = tr.zeros(ACTION_SIZE)
-        vector[action] = advantage.max()
+        vector = tr.zeros(1, ACTION_SIZE)
+        vector[0, action] = advantage.max()
         return vector
 
     def create_entropy(self, predicted):
-        return tr.sum(tr.log(predicted.max(1)[0]) * predicted.max(1)[0])
+        action = predicted.argmax()
+        return tr.sum(tr.log(predicted) * predicted) * self.create_hot_encoded_vector(tr.tensor(1), action)
 
     def gradient(self, predicted, q_value):
-        shape = predicted.shape
         entropy = self.create_entropy(predicted.clone().detach())
-        return tr.sum(-tr.log(predicted).reshape((shape[0], shape[1])) * q_value) + 1 # + entropy
+        return -tr.log(predicted) * q_value + 0.01 * entropy

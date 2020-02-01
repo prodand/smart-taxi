@@ -36,13 +36,13 @@ def build_input(environment, state):
 
 def calculate_reward(old_state, new_state, steps):
     if old_state == new_state:
-        return -1, True
+        return -1, False
     taxi_row, taxi_col, passenger, destination = env.decode(new_state)
     pass_loc = env.locs[passenger]
     if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col:
-        return 1, True
-    if steps == 20:
-        return -1, True
+        return 10, True
+    # if steps == 20:
+    #     return -1, True
     return 0, False
 
 
@@ -71,6 +71,6 @@ if __name__ == '__main__':
 
             frame = build_input(env, new_state)
             network.train(build_input(env, old_state), frame, my_reward, max_action)
-        if my_reward == 1:
+        if end:
             new_state = env.s
             env.reset()
