@@ -1,25 +1,40 @@
-import time
-
 import gym
 import numpy as np
-import torch as tr
-from torch import nn
 
 from dqn import build_fake_input
 from dqn_network import DqnNetwork
-from runner_torch import build_input, prepare_labels
+from funcs import prepare_batch_inputs
 
 INPUT_SIZE = 30
 
+
+def print_values(pass_loc):
+    field = np.zeros((5, 5), dtype=float)
+    for idx in range(5):
+        for j in range(5):
+            env_vector = build_fake_input(idx, j, pass_loc)
+            field[idx, j] = network.predict_value(env_vector)
+    print(field)
+
+
 network = DqnNetwork(INPUT_SIZE)
 
-for i in range(10000000):
-    print("Iteration: ", i)
-    res = network.predict_value(build_fake_input(1, 1, 2))
-    print(res)
-    res = network.predict_value(build_fake_input(2, 0, 2))
-    print(res)
-    res = network.predict_value(build_fake_input(0, 4, 2))
-    print(res)
-    network.train_critic(build_fake_input(1, 1, 2), [[-1]])
-    network.train_critic(build_fake_input(2, 0, 2), [[1]])
+data = np.load("frames.npy")
+rewards = np.load("rewards.npy")
+
+# indexes = np.random.shuffle(np.arrange(0, data.shape[0]))
+indexes = np.arange(0, data.shape[0])
+
+for i, val in enumerate(indexes):
+    inputs = data[i:i + 31, :].tolist()
+    if i % 1000 == 0:
+        print_values(0)
+        print_values(1)
+        print("===========")
+    network.train_critic(prepare_batch_inputs(inputs), rewards[i:i + 31])
+
+print_values(0)
+print_values(1)
+print_values(2)
+print_values(3)
+

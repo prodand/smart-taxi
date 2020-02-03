@@ -45,6 +45,10 @@ def print_values(state):
 if __name__ == '__main__':
     network = DqnNetwork(INPUT_SIZE)
 
+    to_save_frames = np.zeros((500000, INPUT_SIZE))
+    to_save_rewards = np.zeros(500000)
+    save_index = 0
+
     env.reset()
     new_state = env.s
     env.render()
@@ -69,6 +73,15 @@ if __name__ == '__main__':
             my_reward, end = calculate_reward(old_state, new_state, k)
             states.append(frame)
             rewards.append((max_action, my_reward))
+            # saving
+            if save_index < to_save_frames.shape[0]:
+                to_save_frames[save_index, :] = frame
+                to_save_rewards[save_index] = my_reward
+                save_index += 1
+                if save_index == to_save_frames.shape[0]:
+                    np.save('frames-500', to_save_frames)
+                    np.save('rewards-500', to_save_rewards)
+            # saving
             frame = build_input(env, new_state)
 
             print(action, my_reward, total_wins, "Steps: ", steps_to_win)
@@ -76,7 +89,6 @@ if __name__ == '__main__':
 
         network.train(prepare_batch_inputs(states), prepare_rewards(rewards))
         print_values(env.s)
-        # time.sleep(2)
         if my_reward == 10:
             total_wins += 1
             steps_to_win = 0

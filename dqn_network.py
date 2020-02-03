@@ -60,6 +60,9 @@ class DqnNetwork:
     def create_tensor(self, data):
         return tr.from_numpy(data).float().reshape(self.input_shape)
 
+    def create_batch_tensor(self, data):
+        return tr.from_numpy(data).float().reshape((32, self.input_size))
+
     def create_hot_encoded_vector(self, advantage, action):
         vector = tr.zeros(1, ACTION_SIZE)
         action = int(action)
@@ -74,10 +77,16 @@ class DqnNetwork:
         entropy = self.create_entropy(predicted.clone().detach())
         return -tr.log(predicted) * q_value + 0.001 * entropy
 
-    def train_critic(self, state, target):
-            q_value_old = self.critic_model(self.create_tensor(state))
-            self.critic_model.zero_grad()
-            diff = tr.tensor(target, dtype=tr.float) - q_value_old
-            q_value_old.backward(diff)
-            for f in self.critic_model.parameters():
-                f.data.add_(f.grad.data * 0.25)
+    def train_critic(self, states, targets):
+        self.critic_model.zero_grad()
+        q_value_old = self.critic_model(self.create_batch_tensor(states))
+        errors = tr.zeros(q_value_old.shape)
+        for i in range(len(states) - 1):
+            old_state = states[i]
+            reward = targets[i]
+            q_value_old = self.critic_model(self.create_tensor(old_state))
+            q_value_new = self.critic_model(self.create_tensor(states[i + 1])) if reward != -1 else 0
+            advantage = (reward + 0.9 * q_value_new) - q_value_old
+            q_value_old.backward(advantage.clone().detach())
+        for f in self.critic_model.parameters():
+            f.data.add_(f.grad.data * 0.01)
