@@ -24,7 +24,7 @@ def prepare_labels(episode_rewards):
     discounted_reward = 0
     gamma = 0.9
     for index, (act, rw) in enumerate(reversed(episode_rewards)):
-        discounted_reward = rw + discounted_reward * gamma
+        discounted_reward = rw  # + discounted_reward * gamma
         discounted_rewards[len(episode_rewards) - index - 1] = discounted_reward
 
     # discounted_rewards = discounted_rewards / 10
@@ -39,6 +39,15 @@ def prepare_labels(episode_rewards):
     return fake_labels
 
 
+def calc_distance(env, state):
+    taxi_row, taxi_col, passenger, dest = env.decode(state)
+    dest_loc = np.asarray(env.locs[dest])
+    pass_loc = np.asarray((taxi_row, taxi_col) if passenger == 4 else env.locs[passenger])
+    taxi_loc = np.asarray((taxi_row, taxi_col))
+    distance = abs(taxi_loc - pass_loc).sum() + abs(pass_loc - dest_loc).sum()
+    return distance
+
+
 if __name__ == '__main__':
     env = gym.make("Taxi-v3").env
     env.render()
@@ -51,13 +60,17 @@ if __name__ == '__main__':
         samples = frame.reshape((1, INPUT_SIZE))
         rewards = list()
         done = False
-        while not done and k < 1:
+        start_position = calc_distance(env, new_state)
+        cum_reward = 0
+        while not done and k < 9:
             prev_act = env.lastaction
 
             action = network.predict(frame.reshape((1, INPUT_SIZE)))
             max_action = np.argmax(action)
             new_state, reward, done, info = env.step(max_action)
-            rewards.append((max_action, reward))
+            val_next = calc_distance(env, new_state)
+            cum_reward += reward
+            rewards.append((max_action, start_position - val_next + cum_reward))
 
             tmp_last_loc = last_position
             frame, last_position = build_input(env, new_state)
@@ -71,4 +84,4 @@ if __name__ == '__main__':
             if done:
                 env.reset()
 
-            network.fit_single(samples[0:-1, :], prepare_labels(rewards), new_state)
+        network.fit(samples[0:-1, :], prepare_labels(rewards))

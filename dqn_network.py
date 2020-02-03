@@ -14,51 +14,55 @@ class DqnNetwork:
 
     def __init__(self, input_size):
         self.input_size = input_size
+        self.input_shape = (1, self.input_size)
         self.model = nn.Sequential(
-            nn.Conv1d(1, 8, input_size),
-            nn.ReLU(),
-            Flatten(),
-            nn.Linear(8, 4),
+            nn.Linear(input_size, 8),
             nn.Sigmoid(),
-            nn.Linear(4, 4),
+            nn.Linear(8, 4),
             nn.Softmax(dim=1)
         )
         self.critic_model = nn.Sequential(
-            nn.Conv1d(1, 4, input_size),
+            nn.Linear(input_size, 8),
             nn.Sigmoid(),
-            Flatten(),
+            nn.Linear(8, 4),
+            nn.Sigmoid(),
             nn.Linear(4, 1)
         )
 
+    def predict_value(self, data):
+        return self.critic_model(self.create_tensor(data)).detach().numpy().reshape(1)
+
     def predict(self, data):
-        return self.model(tr.from_numpy(data).float().reshape((1, 1, self.input_size))) \
-            .detach().numpy().reshape(ACTION_SIZE)
+        return self.model(self.create_tensor(data)).detach().numpy().reshape(ACTION_SIZE)
 
-    def train(self, old_state, new_state, reward, action):
-        tensor_data = self.create_tensor(old_state)
+    def train(self, states, action_rewards):
+        for i in range(len(states) - 1):
+            old_state = states[i]
+            new_state = states[i + 1]
+            action, reward = action_rewards[i]
+            q_value_old = self.critic_model(self.create_tensor(old_state))
+            q_value_new = self.critic_model(self.create_tensor(new_state)) if reward != -1 else 0
+            advantage = (reward + 0.9 * q_value_new) - q_value_old
+            self.critic_model.zero_grad()
+            q_value_old.backward(advantage.clone().detach())
+            for f in self.critic_model.parameters():
+                f.data.add_(f.grad.data * 0.05)
 
-        q_value_old = self.critic_model(tensor_data.clone().detach())
-        q_value_new = self.critic_model(self.create_tensor(new_state)) # if reward != -1 else 0
-        advantage = (reward + 0.9 * q_value_new) - q_value_old
-        self.critic_model.zero_grad()
-        q_value_old.backward(advantage.clone().detach())
-        for f in self.critic_model.parameters():
-            f.data.add_(f.grad.data * 0.01)
+            output = self.model(self.create_tensor(old_state))
+            loss = self.gradient(output, self.create_hot_encoded_vector(q_value_old.clone().detach(), action))
+            self.model.zero_grad()
+            output.backward(loss)
+            for f in self.model.parameters():
+                f.data.add_(f.grad.data * 0.1)
 
-        output = self.model(tensor_data)
-        loss = self.gradient(output, self.create_hot_encoded_vector(advantage.clone().detach(), action))
-        self.model.zero_grad()
-        output.backward(loss)
-        for f in self.model.parameters():
-            f.data.add_(f.grad.data * 0.01)
-
-        output = self.model(tensor_data)
+            output = self.model(self.create_tensor(old_state))
 
     def create_tensor(self, data):
-        return tr.from_numpy(data).float().reshape((1, 1, self.input_size))
+        return tr.from_numpy(data).float().reshape(self.input_shape)
 
     def create_hot_encoded_vector(self, advantage, action):
         vector = tr.zeros(1, ACTION_SIZE)
+        action = int(action)
         vector[0, action] = advantage.max()
         return vector
 
@@ -68,4 +72,12 @@ class DqnNetwork:
 
     def gradient(self, predicted, q_value):
         entropy = self.create_entropy(predicted.clone().detach())
-        return -tr.log(predicted) * q_value + 0.01 * entropy
+        return -tr.log(predicted) * q_value + 0.001 * entropy
+
+    def train_critic(self, state, target):
+            q_value_old = self.critic_model(self.create_tensor(state))
+            self.critic_model.zero_grad()
+            diff = tr.tensor(target, dtype=tr.float) - q_value_old
+            q_value_old.backward(diff)
+            for f in self.critic_model.parameters():
+                f.data.add_(f.grad.data * 0.25)
