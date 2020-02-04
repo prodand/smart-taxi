@@ -1,5 +1,6 @@
 import torch as tr
 from torch import nn
+from torch.nn import MSELoss
 
 ACTION_SIZE = 4
 
@@ -22,11 +23,11 @@ class DqnNetwork:
             nn.Softmax(dim=1)
         )
         self.critic_model = nn.Sequential(
-            nn.Linear(input_size, 8),
-            nn.Sigmoid(),
-            nn.Linear(8, 4),
-            nn.Sigmoid(),
-            nn.Linear(4, 1)
+            nn.Linear(input_size, 1),
+            # nn.Sigmoid(),
+            # nn.Linear(8, 4),
+            # nn.Sigmoid(),
+            # nn.Linear(4, 1)
         )
 
     def predict_value(self, data):
@@ -84,8 +85,11 @@ class DqnNetwork:
             reward = targets[i]
             q_value_old = self.critic_model(self.create_tensor(old_state))
             q_value_new = self.critic_model(self.create_tensor(new_state)) if reward != -1 else 0
-            advantage = (reward + 0.9 * q_value_new) - q_value_old
+            loss_fn = MSELoss()
+            # advantage = (reward + 0.9 * q_value_new) - q_value_old
+            loss = loss_fn(q_value_old, tr.tensor([reward + 0.9 * q_value_new]))
             self.critic_model.zero_grad()
-            q_value_old.backward(advantage.clone().detach())
+            # q_value_old.backward(advantage.clone().detach())
+            loss.backward()
             for f in self.critic_model.parameters():
-                f.data.add_(f.grad.data * 0.1)
+                f.data.sub_(f.grad.data * 0.1)
