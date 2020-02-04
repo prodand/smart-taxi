@@ -8,7 +8,7 @@ env = gym.make("Taxi-v3").env
 
 
 def build_fake_input(taxi_row, taxi_col, passenger):
-    env_vector = np.full(INPUT_SIZE, 0.0, dtype=float)
+    env_vector = np.full(INPUT_SIZE, 0.2, dtype=float)
     taxi_pos = taxi_row * 5 + taxi_col
     env_vector[taxi_pos] = 1
     env_vector[25] = 0

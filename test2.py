@@ -2,6 +2,8 @@ import numpy as np
 
 from dqn import build_fake_input
 from dqn_network import DqnNetwork
+from layers.custom_net import CustomNet
+from layers.fully_connected import FullyConnected
 
 INPUT_SIZE = 30
 
@@ -26,8 +28,13 @@ def prepare_batch_inputs(frames):
 
 network = DqnNetwork(INPUT_SIZE)
 
-data = np.load("frames.npy")
-rewards = np.load("rewards.npy")
+data = np.load("frames-500.npy")
+rewards = np.load("rewards-500.npy")
+
+custom = CustomNet(1, 0.1)
+custom.add_layer(FullyConnected(INPUT_SIZE, 8, sigm=True))
+custom.add_layer(FullyConnected(8, 4, sigm=True))
+custom.add_layer(FullyConnected(4, 1))
 
 # indexes = np.random.shuffle(np.arrange(0, data.shape[0]))
 indexes = np.arange(0, data.shape[0])
@@ -36,9 +43,11 @@ for i, val in enumerate(indexes):
     end_index = 1
     inputs = data[i:i + 2, :].tolist()
     reward = rewards[i]
-    network.train_critic(prepare_batch_inputs(inputs), rewards[i:i + 1])
-    print_values(0)
-    print("--------------")
+    if reward != 0:
+        network.train_critic(prepare_batch_inputs(inputs), rewards[i:i + 1])
+        custom.learn(prepare_batch_inputs(inputs).reshape((2, INPUT_SIZE)), rewards[i:i + 1])
+        print_values(0)
+        print("--------------")
 
 print_values(0)
 print_values(1)
