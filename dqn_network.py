@@ -78,15 +78,14 @@ class DqnNetwork:
         return -tr.log(predicted) * q_value + 0.001 * entropy
 
     def train_critic(self, states, targets):
-        self.critic_model.zero_grad()
-        q_value_old = self.critic_model(self.create_batch_tensor(states))
-        errors = tr.zeros(q_value_old.shape)
         for i in range(len(states) - 1):
             old_state = states[i]
+            new_state = states[i + 1]
             reward = targets[i]
             q_value_old = self.critic_model(self.create_tensor(old_state))
-            q_value_new = self.critic_model(self.create_tensor(states[i + 1])) if reward != -1 else 0
+            q_value_new = self.critic_model(self.create_tensor(new_state)) if reward != -1 else 0
             advantage = (reward + 0.9 * q_value_new) - q_value_old
+            self.critic_model.zero_grad()
             q_value_old.backward(advantage.clone().detach())
-        for f in self.critic_model.parameters():
-            f.data.add_(f.grad.data * 0.01)
+            for f in self.critic_model.parameters():
+                f.data.add_(f.grad.data * 0.1)
