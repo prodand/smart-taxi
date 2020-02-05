@@ -18,6 +18,19 @@ def build_input(environment, state):
     return env_vector
 
 
+def build_fake_input(taxi_row, taxi_col, passenger):
+    env_vector = np.zeros(INPUT_SIZE, dtype=float)
+    taxi_pos = taxi_row * 5 + taxi_col
+    env_vector[taxi_pos] = 1
+    env_vector[25] = 0
+    env_vector[26] = 0
+    env_vector[27] = 0
+    env_vector[28] = 0
+    env_vector[29] = 0
+    env_vector[25 + passenger] = 0.5
+    return env_vector
+
+
 def prepare_rewards(episode_rewards):
     size = len(episode_rewards)
     discounted_rewards = np.zeros((size, 2), dtype=float)

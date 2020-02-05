@@ -2,22 +2,9 @@ import gym
 import numpy as np
 
 from dqn_network import DqnNetwork
-from funcs import INPUT_SIZE, build_input, prepare_batch_inputs, prepare_rewards
+from funcs import INPUT_SIZE, build_input, prepare_batch_inputs, prepare_rewards, build_fake_input
 
 env = gym.make("Taxi-v3").env
-
-
-def build_fake_input(taxi_row, taxi_col, passenger):
-    env_vector = np.full(INPUT_SIZE, 0.2, dtype=float)
-    taxi_pos = taxi_row * 5 + taxi_col
-    env_vector[taxi_pos] = 1
-    env_vector[25] = 0
-    env_vector[26] = 0
-    env_vector[27] = 0
-    env_vector[28] = 0
-    env_vector[29] = 0
-    env_vector[25 + passenger] = 0.5
-    return env_vector
 
 
 def calculate_reward(old, new_s, steps):
@@ -45,10 +32,6 @@ def print_values(state):
 if __name__ == '__main__':
     network = DqnNetwork(INPUT_SIZE)
 
-    to_save_frames = np.zeros((500000, INPUT_SIZE))
-    to_save_rewards = np.zeros(500000)
-    save_index = 0
-
     env.reset()
     new_state = env.s
     env.render()
@@ -73,15 +56,6 @@ if __name__ == '__main__':
             my_reward, end = calculate_reward(old_state, new_state, k)
             states.append(frame)
             rewards.append((max_action, my_reward))
-            # saving
-            if save_index < to_save_frames.shape[0]:
-                to_save_frames[save_index, :] = frame
-                to_save_rewards[save_index] = my_reward
-                save_index += 1
-                if save_index == to_save_frames.shape[0]:
-                    np.save('frames-500', to_save_frames)
-                    np.save('rewards-500', to_save_rewards)
-            # saving
             frame = build_input(env, new_state)
 
             print(action, my_reward, total_wins, "Steps: ", steps_to_win)

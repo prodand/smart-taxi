@@ -42,28 +42,39 @@ class DqnNetwork:
             old_state = states[i]
             new_state = states[i + 1]
             action, reward = action_rewards[i]
-            q_value_old = self.critic_model(self.create_tensor(old_state))
-            q_value_new = self.critic_model(self.create_tensor(new_state)) if reward != -1 else 0
-            advantage = (reward + 0.9 * q_value_new) - q_value_old
-            self.critic_model.zero_grad()
-            q_value_old.backward(advantage.clone().detach())
-            for f in self.critic_model.parameters():
-                f.data.add_(f.grad.data * 0.05)
+            q_value = self.update_critic(old_state, new_state, reward)
 
-            output = self.model(self.create_tensor(old_state))
-            loss = self.gradient(output, self.create_hot_encoded_vector(q_value_old.clone().detach(), action))
             self.model.zero_grad()
-            output.backward(loss)
+            output = self.model(self.create_tensor(old_state))
+            loss = self.gradient(output, self.create_hot_encoded_vector(q_value.clone().detach(), action))
+            loss.backward(loss)
             for f in self.model.parameters():
                 f.data.add_(f.grad.data * 0.1)
 
-            output = self.model(self.create_tensor(old_state))
+    def train_critic(self, states, targets):
+        for i in range(len(states) - 1):
+            old_state = states[i]
+            new_state = states[i + 1]
+            reward = targets[i]
+            self.update_critic(old_state, new_state, reward)
 
-    def create_tensor(self, data):
-        return tr.from_numpy(data).float().reshape(self.input_shape)
+    def update_critic(self, old_state, new_state, reward):
+        optimizer = SGD(self.critic_model.parameters(), lr=0.1)
+        loss_fn = L1Loss()
+        q_value_new = self.critic_model(self.create_tensor(new_state)).detach().numpy() \
+            if reward != -1 and reward != 10.0 else 0
 
-    def create_batch_tensor(self, data):
-        return tr.from_numpy(data).float().reshape((32, self.input_size))
+        self.critic_model.zero_grad()
+        q_value_old = self.critic_model(self.create_tensor(old_state))
+        tensor_target = tr.tensor([reward + 0.9 * q_value_new]).reshape(q_value_old.shape)
+        loss = loss_fn(q_value_old, tensor_target)
+        loss.backward(loss)
+        optimizer.step()
+        return q_value_old
+
+    def gradient(self, predicted, q_value):
+        entropy = self.create_entropy(predicted.clone().detach())
+        return -tr.log(predicted) * q_value + 0.001 * entropy
 
     def create_hot_encoded_vector(self, advantage, action):
         vector = tr.zeros(1, ACTION_SIZE)
@@ -71,27 +82,12 @@ class DqnNetwork:
         vector[0, action] = advantage.max()
         return vector
 
+    def create_tensor(self, data):
+        return tr.from_numpy(data).float().reshape(self.input_shape)
+
+    def create_batch_tensor(self, data):
+        return tr.from_numpy(data).float().reshape((32, self.input_size))
+
     def create_entropy(self, predicted):
         action = predicted.argmax()
         return tr.sum(tr.log(predicted) * predicted) * self.create_hot_encoded_vector(tr.tensor(1), action)
-
-    def gradient(self, predicted, q_value):
-        entropy = self.create_entropy(predicted.clone().detach())
-        return -tr.log(predicted) * q_value + 0.001 * entropy
-
-    def train_critic(self, states, targets):
-        optimizer = SGD(self.critic_model.parameters(), lr=0.1)
-        loss_fn = L1Loss()
-        for i in range(len(states) - 1):
-            old_state = states[i]
-            new_state = states[i + 1]
-            reward = targets[i]
-            q_value_new = self.critic_model(self.create_tensor(new_state)).detach().numpy() \
-                if reward != -1 and reward != 10.0 else 0
-
-            self.critic_model.zero_grad()
-            q_value_old = self.critic_model(self.create_tensor(old_state))
-            tensor_target = tr.tensor([reward + 0.9 * q_value_new]).reshape(q_value_old.shape)
-            loss = loss_fn(q_value_old, tensor_target)
-            loss.backward(loss)
-            optimizer.step()
