@@ -3,21 +3,16 @@ import numpy as np
 
 class CustomNet:
 
-    def __init__(self, batch_size, learning_rate, learning_rate_decay=0.005):
+    def __init__(self, batch_size, learning_rate):
         self.layers = []
         self.batch_size = batch_size
         self.learning_rate = learning_rate
-        self.learning_rate_decay = learning_rate_decay
         self.folds_number = 10
 
     def add_layer(self, layer):
         self.layers.append(layer)
 
     def learn(self, inputs, target):
-        layers_cache = list()
-        for layer in self.layers:
-            layers_cache.append(list())
-
         inp = inputs[0:1, :]
         forward_activations = [inp]
         output = inp
@@ -27,17 +22,16 @@ class CustomNet:
 
         last = forward_activations.pop()
         reward = target[0]
-        q_value_new = self.predict(inputs[0]) if reward != -1 else 0
-        theta = (reward + 0.9 * q_value_new) - last
-        # theta = reward - last
+        q_value_new = self.predict(inputs[1]) if reward != -1 and reward != 10.0 else 0
+        theta = last - (reward + 0.9 * q_value_new)
 
         error = np.array(theta)
         for layer in reversed(self.layers):
             input_batch = forward_activations.pop()
             error = layer.update_weights(input_batch, error, self.learning_rate)
 
-    def predict(self, input):
+    def predict(self, input_vector):
         for layer in self.layers:
-            input = layer.forward(input)
+            input_vector = layer.forward(input_vector)
 
-        return input
+        return input_vector

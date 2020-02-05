@@ -1,6 +1,7 @@
 import torch as tr
 from torch import nn
-from torch.nn import MSELoss
+from torch.nn import L1Loss
+from torch.optim import SGD
 
 ACTION_SIZE = 4
 
@@ -23,11 +24,11 @@ class DqnNetwork:
             nn.Softmax(dim=1)
         )
         self.critic_model = nn.Sequential(
-            nn.Linear(input_size, 1),
-            # nn.Sigmoid(),
-            # nn.Linear(8, 4),
-            # nn.Sigmoid(),
-            # nn.Linear(4, 1)
+            nn.Linear(input_size, 8),
+            nn.Sigmoid(),
+            nn.Linear(8, 4),
+            nn.Sigmoid(),
+            nn.Linear(4, 1)
         )
 
     def predict_value(self, data):
@@ -79,17 +80,18 @@ class DqnNetwork:
         return -tr.log(predicted) * q_value + 0.001 * entropy
 
     def train_critic(self, states, targets):
+        optimizer = SGD(self.critic_model.parameters(), lr=0.1)
+        loss_fn = L1Loss()
         for i in range(len(states) - 1):
             old_state = states[i]
             new_state = states[i + 1]
             reward = targets[i]
-            q_value_old = self.critic_model(self.create_tensor(old_state))
-            q_value_new = self.critic_model(self.create_tensor(new_state)) if reward != -1 else 0
-            loss_fn = MSELoss()
-            # advantage = (reward + 0.9 * q_value_new) - q_value_old
-            loss = loss_fn(q_value_old, tr.tensor([reward + 0.9 * q_value_new]))
+            q_value_new = self.critic_model(self.create_tensor(new_state)).detach().numpy() \
+                if reward != -1 and reward != 10.0 else 0
+
             self.critic_model.zero_grad()
-            # q_value_old.backward(advantage.clone().detach())
-            loss.backward()
-            for f in self.critic_model.parameters():
-                f.data.sub_(f.grad.data * 0.1)
+            q_value_old = self.critic_model(self.create_tensor(old_state))
+            tensor_target = tr.tensor([reward + 0.9 * q_value_new]).reshape(q_value_old.shape)
+            loss = loss_fn(q_value_old, tensor_target)
+            loss.backward(loss)
+            optimizer.step()
