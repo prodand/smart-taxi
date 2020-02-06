@@ -42,6 +42,7 @@ if __name__ == '__main__':
     total_wins = 0
     steps_to_win = 0
     print_values(env.s)
+    iteration = 0
     while True:
         k = 0
         frame = build_input(env, new_state)
@@ -50,6 +51,7 @@ if __name__ == '__main__':
         my_reward = 0
         states = list()
         rewards = list()
+        iteration += 1
         while not end:
             action = network.predict(frame)
             max_action = np.argmax(action)
@@ -59,7 +61,7 @@ if __name__ == '__main__':
             steps_to_win += 1
             my_reward, end = calculate_reward(old_state, new_state, k)
 
-            print(action, my_reward, total_wins, "Steps: ", steps_to_win)
+            print(action, my_reward, total_wins, "Steps: ", steps_to_win, "Iteration: ", iteration)
             env.render()
 
             network.train(prepare_input(old_state), np.array([max_action]))
