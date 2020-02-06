@@ -18,7 +18,9 @@ class DqnNetwork:
         self.input_size = input_size
         self.input_shape = (1, self.input_size)
         self.model = nn.Sequential(
-            nn.Linear(input_size, 8),
+            nn.Linear(input_size, 16),
+            nn.Sigmoid(),
+            nn.Linear(16, 8),
             nn.Sigmoid(),
             nn.Linear(8, 4),
             nn.Softmax(dim=1)
@@ -60,7 +62,7 @@ class DqnNetwork:
             self.update_critic(old_state, new_state, reward)
 
     def update_critic(self, old_state, new_state, reward):
-        optimizer = SGD(self.critic_model.parameters(), lr=0.1)
+        optimizer = SGD(self.critic_model.parameters(), lr=0.07)
         loss_fn = L1Loss()
         q_value_new = self.critic_model(self.create_tensor(new_state)).detach().numpy() \
             if reward != -1 and reward != 10.0 else 0
