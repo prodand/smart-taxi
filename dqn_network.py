@@ -47,9 +47,10 @@ class DqnNetwork:
             self.model.zero_grad()
             output = self.model(self.create_tensor(old_state))
             loss = self.gradient(output, self.create_hot_encoded_vector(q_value.clone().detach(), action))
-            loss.backward(loss)
+            output.backward(loss)
             for f in self.model.parameters():
                 f.data.add_(f.grad.data * 0.1)
+            output = self.model(self.create_tensor(old_state))
 
     def train_critic(self, states, targets):
         for i in range(len(states) - 1):
