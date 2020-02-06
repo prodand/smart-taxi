@@ -39,12 +39,11 @@ class DqnNetwork:
     def predict(self, data):
         return self.model(self.create_tensor(data)).detach().numpy().reshape(ACTION_SIZE)
 
-    def train(self, states, action_rewards):
-        for i in range(len(states) - 1):
+    def train(self, states, actions):
+        for i in range(len(states)):
             old_state = states[i]
-            new_state = states[i + 1]
-            action, reward = action_rewards[i]
-            q_value = self.update_critic(old_state, new_state, reward)
+            action = actions[i]
+            q_value = self.critic_model(self.create_tensor(old_state))
 
             self.model.zero_grad()
             output = self.model(self.create_tensor(old_state))
@@ -55,7 +54,7 @@ class DqnNetwork:
             output = self.model(self.create_tensor(old_state))
 
     def train_critic(self, states, targets):
-        for i in range(len(states) - 1):
+        for i in range(len(states) - 2, -1, -1):
             old_state = states[i]
             new_state = states[i + 1]
             reward = targets[i]

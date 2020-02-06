@@ -41,12 +41,12 @@ def build_fake_input(taxi_row, taxi_col, passenger):
 
 def prepare_rewards(episode_rewards):
     size = len(episode_rewards)
-    discounted_rewards = np.zeros((size, 2), dtype=float)
+    discounted_rewards = np.zeros(size, dtype=float)
     discounted_reward = 0
     gamma = 0.9
-    for index, (act, rw) in enumerate(reversed(episode_rewards)):
+    for index, rw in enumerate(reversed(episode_rewards)):
         discounted_reward = rw  # + discounted_reward * gamma
-        discounted_rewards[size - index - 1, :] = [act, discounted_reward]
+        discounted_rewards[size - index - 1] = discounted_reward
     return discounted_rewards
 
 
