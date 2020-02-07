@@ -15,7 +15,7 @@ def calculate_reward(old, new_s, steps):
     if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col:
         return 10, True
     if steps == 20:
-        return -1, True
+        return -0.2, True
     return 0, False
 
 
@@ -64,14 +64,16 @@ if __name__ == '__main__':
             print(action, my_reward, total_wins, "Steps: ", steps_to_win, "Iteration: ", iteration)
             env.render()
 
-            network.train(prepare_input(old_state), np.array([max_action]))
             print_values(env.s)
 
             states.append(build_input(env, old_state))
             rewards.append(my_reward)
+            if end:
+                network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
+
+            network.train(prepare_input(old_state), np.array([max_action]))
             frame = build_input(env, new_state)
 
-        network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
         if my_reward == 10:
             total_wins += 1
             steps_to_win = 0

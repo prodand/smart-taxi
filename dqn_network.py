@@ -19,16 +19,16 @@ class DqnNetwork:
         self.input_shape = (1, self.input_size)
         self.model = nn.Sequential(
             nn.Linear(input_size, 16),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Linear(16, 8),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Linear(8, 4),
         )
         self.critic_model = nn.Sequential(
             nn.Linear(input_size, 8),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Linear(8, 4),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Linear(4, 1)
         )
 
@@ -48,11 +48,11 @@ class DqnNetwork:
             self.model.zero_grad()
             output = self.model(self.create_tensor(old_state))
             loss = self.gradient(output, self.create_hot_encoded_vector(q_value.clone().detach(), action))
-            # output.backward(loss)
             loss.backward(loss)
             for f in self.model.parameters():
                 f.data.add_(f.grad.data * 0.1)
-            output = self.model(self.create_tensor(old_state))
+            output_next = self.model(self.create_tensor(old_state))
+            i = 1
 
     def train_critic(self, states, targets):
         for i in range(len(states) - 2, -1, -1):
@@ -78,9 +78,9 @@ class DqnNetwork:
     def gradient(self, predicted, q_value):
         # entropy = self.create_entropy(predicted.clone().detach())
         log_softmax = nn.LogSoftmax(dim=1)
-        # return tr.sum(tr.add(- q_value * log_softmax(predicted), 0.001 * entropy), dim=1)
+        return tr.sum(- q_value * log_softmax(predicted), dim=1)
         # return tr.add(- q_value * log_softmax(predicted), 0.001 * entropy)
-        return - q_value * log_softmax(predicted)
+        # return - q_value * log_softmax(predicted)
 
     def create_hot_encoded_vector(self, advantage, action):
         vector = tr.zeros(1, ACTION_SIZE)
