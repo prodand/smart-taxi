@@ -22,7 +22,7 @@ class FullyConnected(BaseLayer):
         layer_out = np.dot(image_vector, self.weights) + self.bias
         if self.sigm:
             return self.sigmoid(layer_out)
-        return layer_out
+        return self.relu(layer_out)
 
     def back(self, activation_theta, layer_input):
         return np.dot(self.sigmoid_(layer_input, activation_theta), self.weights.T)

@@ -14,4 +14,4 @@ class Softmax(BaseLayer):
         return activation_theta
 
     def update_weights(self, input_batch, error_batch, learning_rate):
-        pass
+        return error_batch

@@ -37,19 +37,19 @@ def prepare_input(current_state):
 
 
 if __name__ == '__main__':
-    custom = CustomNetActor(1, 0.1)
     network = DqnBaselineNetwork(INPUT_SIZE)
-    custom.add_layer(FullyConnected(INPUT_SIZE, 16,
-                                    weights=network.model[0].weight.data.numpy().T,
-                                    bias=network.model[0].bias.data.numpy().T,
+    custom = CustomNetActor(1, 0.1, network)
+    custom.add_layer(FullyConnected(INPUT_SIZE, 16, sigm=False,
+                                    weights=network.l1.weight.data.numpy().T,
+                                    bias=network.l1.bias.data.numpy().T,
                                     ))
-    custom.add_layer(FullyConnected(16, 8,
-                                    weights=network.model[2].weight.data.numpy().T,
-                                    bias=network.model[2].bias.data.numpy().T,
+    custom.add_layer(FullyConnected(16, 8, sigm=False,
+                                    weights=network.l2.weight.data.numpy().T,
+                                    bias=network.l2.bias.data.numpy().T,
                                     ))
-    custom.add_layer(FullyConnected(8, 4,
-                                    weights=network.model[4].weight.data.numpy().T,
-                                    bias=network.model[4].bias.data.numpy().T,
+    custom.add_layer(FullyConnected(8, 4, sigm=False,
+                                    weights=network.l3.weight.data.numpy().T,
+                                    bias=network.l3.bias.data.numpy().T,
                                     ))
     custom.add_layer(Softmax())
 
