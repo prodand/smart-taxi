@@ -3,9 +3,6 @@ import numpy as np
 
 from dqn_baseline_network import DqnBaselineNetwork
 from funcs import INPUT_SIZE, build_input, prepare_batch_inputs, prepare_rewards, build_fake_input
-from layers.custom_net_actor import CustomNetActor
-from layers.fully_connected import FullyConnected
-from layers.softmax import Softmax
 
 env = gym.make("Taxi-v3").env
 
@@ -16,7 +13,7 @@ def calculate_reward(old, new_s, steps):
     taxi_row, taxi_col, passenger, destination = env.decode(new_s)
     pass_loc = env.locs[passenger]
     if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col:
-        return 1, True
+        return 10, True
     if steps == 20:
         return -0.2, True
     return 0, False
@@ -38,20 +35,20 @@ def prepare_input(current_state):
 
 if __name__ == '__main__':
     network = DqnBaselineNetwork(INPUT_SIZE)
-    custom = CustomNetActor(1, 0.1, network)
-    custom.add_layer(FullyConnected(INPUT_SIZE, 16, sigm=False,
-                                    weights=network.l1.weight.data.numpy().T,
-                                    bias=network.l1.bias.data.numpy().T,
-                                    ))
-    custom.add_layer(FullyConnected(16, 8, sigm=False,
-                                    weights=network.l2.weight.data.numpy().T,
-                                    bias=network.l2.bias.data.numpy().T,
-                                    ))
-    custom.add_layer(FullyConnected(8, 4, sigm=False,
-                                    weights=network.l3.weight.data.numpy().T,
-                                    bias=network.l3.bias.data.numpy().T,
-                                    ))
-    custom.add_layer(Softmax())
+    # custom = CustomNetActor(1, 0.1, network)
+    # custom.add_layer(FullyConnected(INPUT_SIZE, 16, sigm=True,
+    #                                 weights=network.model[0].weight.data.clone().detach().numpy().T,
+    #                                 bias=network.model[0].bias.data.clone().detach().numpy().T,
+    #                                 ))
+    # custom.add_layer(FullyConnected(16, 8, sigm=True,
+    #                                 weights=network.model[2].weight.data.clone().detach().numpy().T,
+    #                                 bias=network.model[2].bias.data.clone().detach().numpy().T,
+    #                                 ))
+    # custom.add_layer(FullyConnected(8, 4, sigm=False,
+    #                                 weights=network.model[4].weight.data.clone().detach().numpy().T,
+    #                                 bias=network.model[4].bias.data.clone().detach().numpy().T,
+    #                                 ))
+    # custom.add_layer(Softmax())
 
     env.reset()
     new_state = env.s
@@ -71,7 +68,7 @@ if __name__ == '__main__':
         iteration += 1
         while not end:
             action = network.predict(frame)
-            action1 = custom.predict(frame)
+            # action1 = custom.predict(frame)
             max_action = np.argmax(action)
             old_state = new_state
             new_state, reward, done, info = env.step(max_action)
@@ -80,19 +77,20 @@ if __name__ == '__main__':
             my_reward, end = calculate_reward(old_state, new_state, k)
 
             print(action, my_reward, total_wins, "Steps: ", steps_to_win, "Iteration: ", iteration)
-            print(action1)
+            # print(action1, my_reward, total_wins, "Steps: ", steps_to_win, "Iteration: ", iteration)
             env.render()
-
-            print_values(env.s)
 
             states.append(build_input(env, old_state))
             rewards.append(my_reward)
             if end:
                 network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
 
-            network.train(prepare_input(old_state), [(max_action, my_reward)])
-            custom.learn(prepare_input(old_state), [(max_action, my_reward)])
+            print_values(env.s)
+
             frame = build_input(env, new_state)
+            network.train(prepare_input(old_state), [(max_action, my_reward)])
+            # custom.learn(prepare_input(old_state), [(max_action, my_reward)])
+            aaaa = 0
 
         if my_reward == 10:
             total_wins += 1

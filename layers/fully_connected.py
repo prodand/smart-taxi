@@ -21,7 +21,7 @@ class FullyConnected(BaseLayer):
     def forward(self, image_vector):
         layer_out = np.dot(image_vector, self.weights) + self.bias
         if self.sigm:
-            return self.sigmoid(layer_out)
+            return self.relu(layer_out)
         return self.relu(layer_out)
 
     def back(self, activation_theta, layer_input):
@@ -38,8 +38,8 @@ class FullyConnected(BaseLayer):
         linear_error = self.sigmoid_(input_batch, error_batch)
         derivative_weights = np.dot(input_batch.T, linear_error)
         batch_size = input_batch.shape[0]
-        self.weights = self.weights - learning_rate * (derivative_weights / batch_size)
-        self.bias = self.bias - learning_rate * (linear_error / batch_size)
+        self.weights = self.weights + learning_rate * (derivative_weights / batch_size)
+        self.bias = self.bias + learning_rate * (linear_error / batch_size)
         return input_error
 
     def relu(self, image):

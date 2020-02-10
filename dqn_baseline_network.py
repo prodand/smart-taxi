@@ -23,17 +23,21 @@ class DqnBaselineNetwork:
         self.r2 = nn.ReLU()
         self.l3 = nn.Linear(8, 4)
         self.model = nn.Sequential(
-            nn.Linear(input_size, 16),
-            nn.ReLU(),
+            nn.Linear(input_size, 32),
+            nn.Tanh(),
+            nn.Linear(32, 16),
+            nn.Tanh(),
             nn.Linear(16, 8),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(8, 4),
         )
         self.critic_model = nn.Sequential(
-            nn.Linear(input_size, 8),
-            nn.Tanh(),
+            nn.Linear(input_size, 16),
+            nn.Sigmoid(),
+            nn.Linear(16, 8),
+            nn.Sigmoid(),
             nn.Linear(8, 4),
-            nn.Tanh(),
+            nn.Sigmoid(),
             nn.Linear(4, 1)
         )
 
@@ -58,9 +62,9 @@ class DqnBaselineNetwork:
 
             self.model.zero_grad()
             output = self.model(self.create_tensor(old_state))
-            advantage = reward - q_value.clone().detach() if reward != -1 and reward != 1 else tr.tensor([reward])
-            loss = self.gradient(output, self.create_hot_encoded_vector(advantage, action))
-            loss.backward(loss)
+            advantage = q_value.clone().detach().max() if reward == 0 else tr.tensor(reward)
+            loss = self.gradient(output, self.create_hot_encoded_vector(tr.tensor(1.0), action))
+            output.backward(advantage * loss.detach())
             for f in self.model.parameters():
                 f.data.add_(f.grad.data * 0.1)
             output_next = self.model(self.create_tensor(old_state))
@@ -81,18 +85,15 @@ class DqnBaselineNetwork:
 
         self.critic_model.zero_grad()
         q_value_old = self.critic_model(self.create_tensor(old_state))
-        tensor_target = tr.tensor([reward + 0.9 * q_value_new]).reshape(q_value_old.shape)
+        tensor_target = tr.tensor([reward + 0.6 * q_value_new]).reshape(q_value_old.shape)
         loss = loss_fn(q_value_old, tensor_target)
         loss.backward(loss)
         optimizer.step()
         return q_value_old
 
-    def gradient(self, predicted, q_value):
+    def gradient(self, predicted, expected):
         # entropy = self.create_entropy(predicted.clone().detach())
-        log_softmax = nn.LogSoftmax(dim=1)
-        # return tr.sum(- q_value * log_softmax(predicted), dim=1)
-        # return tr.add(- q_value * log_softmax(predicted), 0.001 * entropy)
-        return -q_value * log_softmax(predicted)
+        return expected - nn.functional.softmax(predicted, dim=1)
 
     def create_hot_encoded_vector(self, advantage, action):
         vector = tr.zeros(1, ACTION_SIZE)
