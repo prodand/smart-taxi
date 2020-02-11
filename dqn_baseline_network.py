@@ -56,24 +56,27 @@ class DqnBaselineNetwork:
             i = 1
 
     def train_critic(self, states, targets):
+        optimizer = SGD(self.critic_model.parameters(), lr=0.07)
+        self.critic_model.zero_grad()
         for i in range(len(states) - 2, -1, -1):
             old_state = states[i]
             new_state = states[i + 1]
             reward = targets[i]
             self.update_critic(old_state, new_state, reward)
+        optimizer.step()
 
     def update_critic(self, old_state, new_state, reward):
-        optimizer = SGD(self.critic_model.parameters(), lr=0.07)
+        # optimizer = SGD(self.critic_model.parameters(), lr=0.07)
         loss_fn = L1Loss()
         q_value_new = self.critic_model(self.create_tensor(new_state)).detach().numpy() \
             if reward != -1 and reward != 10.0 else 0
 
-        self.critic_model.zero_grad()
+        # self.critic_model.zero_grad()
         q_value_old = self.critic_model(self.create_tensor(old_state))
         tensor_target = tr.tensor([reward + 0.6 * q_value_new]).reshape(q_value_old.shape)
         loss = loss_fn(q_value_old, tensor_target)
         loss.backward(loss)
-        optimizer.step()
+        # optimizer.step()
         return q_value_old
 
     def gradient(self, predicted, expected):

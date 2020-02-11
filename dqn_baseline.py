@@ -50,6 +50,7 @@ if __name__ == '__main__':
     print_values(env.s)
     iteration = 0
     performance = list()
+    last_plot_point = 0
     while True:
         k = 0
         frame = build_input(env, new_state)
@@ -89,5 +90,6 @@ if __name__ == '__main__':
             new_state = env.s
             env.reset()
 
-        if total_wins % 50 == 0:
+        if total_wins > last_plot_point and total_wins % 50 == 0:
             show_graphic(performance)
+            last_plot_point = total_wins
