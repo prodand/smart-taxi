@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import matplotlib.pyplot as plt
 
 from dqn_baseline_network import DqnBaselineNetwork
 from funcs import INPUT_SIZE, build_input, prepare_batch_inputs, prepare_rewards, build_fake_input
@@ -33,6 +34,12 @@ def prepare_input(current_state):
     return build_input(env, current_state).reshape((1, INPUT_SIZE))
 
 
+def show_graphic(y_values):
+    plt.plot(y_values)
+    plt.ylabel('Steps number')
+    plt.show()
+
+
 if __name__ == '__main__':
     network = DqnBaselineNetwork(INPUT_SIZE)
     env.reset()
@@ -42,6 +49,7 @@ if __name__ == '__main__':
     steps_to_win = 0
     print_values(env.s)
     iteration = 0
+    performance = list()
     while True:
         k = 0
         frame = build_input(env, new_state)
@@ -76,6 +84,10 @@ if __name__ == '__main__':
 
         if my_reward == 10:
             total_wins += 1
+            performance.append(steps_to_win)
             steps_to_win = 0
             new_state = env.s
             env.reset()
+
+        if total_wins % 50 == 0:
+            show_graphic(performance)
