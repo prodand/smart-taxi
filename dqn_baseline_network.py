@@ -1,3 +1,4 @@
+import numpy as np
 import torch as tr
 from torch import nn
 from torch.nn import L1Loss
@@ -51,18 +52,24 @@ class DqnBaselineNetwork:
             loss = self.gradient(output, self.create_hot_encoded_vector(tr.tensor(1.0), action))
             output.backward(advantage * loss.detach())
             for f in self.model.parameters():
-                f.data.add_(f.grad.data * 0.1)
+                f.data.add_(f.grad.data * 0.03)
             output_next = self.predict(old_state)
             i = 1
 
     def train_critic(self, states, targets):
         optimizer = SGD(self.critic_model.parameters(), lr=0.07)
         self.critic_model.zero_grad()
-        for i in range(len(states) - 2, -1, -1):
-            old_state = states[i]
-            new_state = states[i + 1]
+        target_values = np.zeros(len(states) - 1)
+        for i in range(len(states) - 1):
             reward = targets[i]
-            self.update_critic(old_state, new_state, reward)
+            target_value = self.critic_model(self.create_tensor(states[i + 1])).detach().numpy() \
+                if reward != -1 and reward != 10.0 else 0
+            target_values[i] = reward + 0.6 * target_value
+
+        output = self.critic_model(tr.tensor(states[0:-1, :]).float())
+        loss_fn = L1Loss()
+        loss = loss_fn(output, tr.tensor(target_values).float().reshape(output.shape))
+        loss.backward(loss)
         optimizer.step()
 
     def update_critic(self, old_state, new_state, reward):
