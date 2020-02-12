@@ -6,6 +6,7 @@ from torch.optim import SGD
 
 ACTION_SIZE = 4
 GAMMA = 0.6
+ADVANTAGE_THRESHOLD = 0.006
 
 
 class Flatten(nn.Module):
@@ -51,6 +52,7 @@ class DqnBaselineNetwork:
         self.model.zero_grad()
         output = self.model(self.create_tensor(old_state))
         advantage = v_value_next - v_value if reward == 0 else tr.tensor(reward)
+        advantage = v_value if advantage.abs() < ADVANTAGE_THRESHOLD else advantage
         loss = self.gradient(output, self.create_hot_encoded_vector(tr.tensor(1.0), action))
         output.backward(advantage * loss.detach())
         for f in self.model.parameters():
