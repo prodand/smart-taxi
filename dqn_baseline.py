@@ -7,7 +7,6 @@ from funcs import INPUT_SIZE, build_input, prepare_batch_inputs, prepare_rewards
 
 env = gym.make("Taxi-v3").env
 
-
 def calculate_reward(old, new_s, steps):
     if old == new_s:
         return -1, True
@@ -91,5 +90,6 @@ if __name__ == '__main__':
             env.reset()
 
         if total_wins > last_plot_point and total_wins % 50 == 0:
+            performance = performance[0:-1000] if len(performance) > 1000 else performance
             show_graphic(performance)
             last_plot_point = total_wins
