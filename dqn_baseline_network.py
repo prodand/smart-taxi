@@ -5,6 +5,7 @@ from torch.nn import L1Loss
 from torch.optim import SGD
 
 ACTION_SIZE = 4
+GAMMA = 0.6
 
 
 class Flatten(nn.Module):
@@ -41,20 +42,21 @@ class DqnBaselineNetwork:
         return nn.functional.softmax(output, 1).detach().numpy().reshape(ACTION_SIZE)
 
     def train(self, states, action_rewards):
-        for i in range(len(states)):
-            old_state = states[i]
-            action, reward = action_rewards[i]
-            q_value = self.critic_model(self.create_tensor(old_state))
+        old_state = states[0]
+        next_state = states[1]
+        action, reward = action_rewards[0]
+        v_value = self.critic_model(self.create_tensor(old_state)).detach().max()
+        v_value_next = self.critic_model(self.create_tensor(next_state)).detach().max()
 
-            self.model.zero_grad()
-            output = self.model(self.create_tensor(old_state))
-            advantage = q_value.clone().detach().max() if reward == 0 else tr.tensor(reward)
-            loss = self.gradient(output, self.create_hot_encoded_vector(tr.tensor(1.0), action))
-            output.backward(advantage * loss.detach())
-            for f in self.model.parameters():
-                f.data.add_(f.grad.data * 0.03)
-            output_next = self.predict(old_state)
-            i = 1
+        self.model.zero_grad()
+        output = self.model(self.create_tensor(old_state))
+        advantage = v_value_next - v_value if reward == 0 else tr.tensor(reward)
+        loss = self.gradient(output, self.create_hot_encoded_vector(tr.tensor(1.0), action))
+        output.backward(advantage * loss.detach())
+        for f in self.model.parameters():
+            f.data.add_(f.grad.data * 0.03)
+        output_next = self.predict(old_state)
+        i = 1
 
     def train_critic(self, states, targets):
         optimizer = SGD(self.critic_model.parameters(), lr=0.07)
@@ -80,7 +82,7 @@ class DqnBaselineNetwork:
 
         # self.critic_model.zero_grad()
         q_value_old = self.critic_model(self.create_tensor(old_state))
-        tensor_target = tr.tensor([reward + 0.6 * q_value_new]).reshape(q_value_old.shape)
+        tensor_target = tr.tensor([reward + GAMMA * q_value_new]).reshape(q_value_old.shape)
         loss = loss_fn(q_value_old, tensor_target)
         loss.backward(loss)
         # optimizer.step()

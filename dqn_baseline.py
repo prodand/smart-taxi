@@ -30,8 +30,8 @@ def print_values(state):
     print(field)
 
 
-def prepare_input(current_state):
-    return build_input(env, current_state).reshape((1, INPUT_SIZE))
+def prepare_input(current_state, next_state):
+    return np.column_stack((build_input(env, current_state), build_input(env, next_state))).T
 
 
 def show_graphic(y_values):
@@ -80,7 +80,7 @@ if __name__ == '__main__':
             print_values(env.s)
 
             frame = build_input(env, new_state)
-            network.train(prepare_input(old_state), [(max_action, my_reward)])
+            network.train(prepare_input(old_state, new_state), [(max_action, my_reward)])
             aaaa = 0
 
         if my_reward == 10:
