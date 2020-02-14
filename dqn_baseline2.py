@@ -2,7 +2,7 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-from dqn_baseline_network import DqnBaselineNetwork
+from dqn_baseline_network2 import DqnBaselineNetwork
 from funcs import INPUT_SIZE, build_input, prepare_batch_inputs, prepare_rewards, build_fake_input
 
 env = gym.make("Taxi-v3").env
@@ -82,8 +82,6 @@ if __name__ == '__main__':
 
             frame = build_input(env, new_state)
             network.train(prepare_input(old_state, new_state), [(max_action, my_reward)])
-            if steps_to_win > 100000:
-                break
             aaaa = 0
 
         if my_reward == 10:
@@ -94,6 +92,6 @@ if __name__ == '__main__':
             env.reset()
 
         if total_wins > last_plot_point and total_wins % 50 == 0:
-            performance = performance[0:-1000] if len(performance) > 1000 else performance
+            performance = performance[-1000:] if len(performance) > 1000 else performance
             show_graphic(performance)
             last_plot_point = total_wins
