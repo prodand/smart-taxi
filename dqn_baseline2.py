@@ -58,10 +58,10 @@ if __name__ == '__main__':
         end = False
         print("----NEW ROUND----")
         my_reward = 0
-        states = list()
-        rewards = list()
         iteration += 1
         while not end:
+            states = list()
+            rewards = list()
             action = network.predict(frame)
             max_action = np.argmax(action)
             old_state = new_state
@@ -75,8 +75,7 @@ if __name__ == '__main__':
 
             states.append(build_input(env, old_state))
             rewards.append(my_reward)
-            if end:
-                network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
+            network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
 
             print_values(env.s)
 

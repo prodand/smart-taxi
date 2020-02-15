@@ -36,6 +36,7 @@ def prepare_input(current_state, next_state):
 
 
 def show_graphic(y_values):
+    plt.clf()
     plt.plot(y_values)
     plt.ylabel('Steps number')
     plt.show()
@@ -58,10 +59,10 @@ if __name__ == '__main__':
         end = False
         print("----NEW ROUND----")
         my_reward = 0
-        states = list()
-        rewards = list()
         iteration += 1
         while not end:
+            states = list()
+            rewards = list()
             action = network.predict(frame)
             max_action = np.argmax(action)
             old_state = new_state
@@ -75,14 +76,15 @@ if __name__ == '__main__':
 
             states.append(build_input(env, old_state))
             rewards.append(my_reward)
-            if end:
-                network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
+            # if end:
+            network.train_critic(prepare_batch_inputs(states), prepare_rewards(rewards))
 
             print_values(env.s)
 
             frame = build_input(env, new_state)
             network.train(prepare_input(old_state, new_state), [(max_action, my_reward)])
             if steps_to_win > 100000:
+                env.reset()
                 break
             aaaa = 0
 
@@ -94,6 +96,6 @@ if __name__ == '__main__':
             env.reset()
 
         if total_wins > last_plot_point and total_wins % 50 == 0:
-            performance = performance[0:-1000] if len(performance) > 1000 else performance
+            performance = performance[-1000:] if len(performance) > 1000 else performance
             show_graphic(performance)
             last_plot_point = total_wins
