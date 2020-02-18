@@ -25,14 +25,25 @@ def build_fake_input(taxi_row, taxi_col, passenger):
     return env_vector
 
 
-def prepare_rewards(episode_rewards):
-    size = len(episode_rewards)
+def prepare_rewards(rewards):
+    size = len(rewards)
     discounted_rewards = np.zeros(size, dtype=float)
     discounted_reward = 0
     gamma = 0.9
-    for index, rw in enumerate(reversed(episode_rewards)):
+    for index, rw in enumerate(reversed(rewards)):
         discounted_reward = rw  # + discounted_reward * gamma
         discounted_rewards[size - index - 1] = discounted_reward
+    return discounted_rewards
+
+
+def prepare_action_rewards(action_rewards):
+    size = len(action_rewards)
+    discounted_rewards = np.zeros((size, 2), dtype=float)
+    discounted_reward = 0
+    gamma = 0.9
+    for index, (action, rw) in enumerate(reversed(action_rewards)):
+        discounted_reward = rw + discounted_reward * gamma
+        discounted_rewards[size - index - 1] = [action, discounted_reward]
     return discounted_rewards
 
 
