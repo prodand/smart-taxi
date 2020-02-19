@@ -11,14 +11,14 @@ plt.ion()
 
 def calculate_reward(old, new_s, steps):
     if old == new_s:
-        return -1, True
+        return -1, True, True
     taxi_row, taxi_col, passenger, destination = env.decode(new_s)
     pass_loc = env.locs[passenger]
     if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col:
-        return 10, True
+        return 10, True, True
     if steps == 20:
-        return -0.8, True
-    return 0, False
+        return -0.45, True, False
+    return 0, False, False
 
 
 def prepare_input(parking_states):
@@ -68,7 +68,7 @@ if __name__ == '__main__':
             old_state = new_state
             new_state, reward, done, info = env.step(max_action)
             k += 1
-            my_reward, end = calculate_reward(old_state, new_state, k)
+            my_reward, end, reset = calculate_reward(old_state, new_state, k)
 
             print(action, my_reward, total_wins, "Episodes: ", episodes, "Iteration: ", iteration)
             print('Average: %.3f' % avg)
@@ -78,8 +78,9 @@ if __name__ == '__main__':
             rewards.append((max_action, my_reward))
 
             frame = build_input(env, new_state)
-            if end:
+            if reset:
                 env.reset()
+            if end:
                 break
 
         network.train(prepare_input(states), prepare_action_rewards(rewards))

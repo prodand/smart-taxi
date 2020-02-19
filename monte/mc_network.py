@@ -35,8 +35,9 @@ class McNetwork:
 
     def train(self, states, action_rewards):
         actions, rewards = to_arrays(action_rewards)
-
-        for i in range(len(states)):
+        indexes = list(range(0, len(states)))
+        np.random.shuffle(indexes)
+        for i in indexes:
             state = states[i:i+1]
             action = actions[i:i+1]
             self.model.zero_grad()
@@ -44,7 +45,7 @@ class McNetwork:
             loss = self.gradient(output, self.create_hot_encoded_vector(action))
             output.backward((loss.detach().T * tr.tensor(rewards[i:i+1])).T.detach())
             for f in self.model.parameters():
-                f.data.add_(f.grad.data * 0.0007)
+                f.data.add_(f.grad.data * 0.0005)
 
     def gradient(self, predicted, expected):
         return expected - nn.functional.softmax(predicted, dim=1)
