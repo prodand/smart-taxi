@@ -40,15 +40,24 @@ class McNetwork:
         for i in indexes:
             state = states[i:i+1]
             action = actions[i:i+1]
+            before = self.predict(state)
             self.model.zero_grad()
             output = self.model(self.create_tensor(state, len(state)))
             loss = self.gradient(output, self.create_hot_encoded_vector(action))
-            output.backward((loss.detach().T * tr.tensor(rewards[i:i+1])).T.detach())
+            # output.backward((loss.detach().T * tr.tensor(rewards[i:i+1])).T.detach())
+            G = tr.tensor(rewards[i:i+1]).max()
+            loss.backward()
             for f in self.model.parameters():
-                f.data.add_(f.grad.data * 0.0005)
+                f.data.add_(G * f.grad.data * 0.0005)
+            after = self.predict(state)
+            idx = int(action.max())
+            if G < 0 and before[idx] < after[idx]:
+                print("Wrong negative")
+            if G > 0 and before[idx] > after[idx]:
+                print("Wrong positive")
 
     def gradient(self, predicted, expected):
-        return expected - nn.functional.softmax(predicted, dim=1)
+        return tr.sum(expected * nn.functional.log_softmax(predicted, dim=1))
 
     def create_hot_encoded_vector(self, actions):
         vector = np.zeros((len(actions), ACTION_SIZE))
