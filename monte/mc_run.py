@@ -11,13 +11,13 @@ plt.ion()
 
 def calculate_reward(old, new_s, steps):
     if old == new_s:
-        return -1, True, False
+        return -3, True, False
     taxi_row, taxi_col, passenger, destination = env.decode(new_s)
     pass_loc = env.locs[passenger]
     if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col:
-        return 3, True, True
+        return 8, True, True
     if steps == 20:
-        return -0.45, True, False
+        return -0.07, True, False
     return -0.07, False, False
 
 
