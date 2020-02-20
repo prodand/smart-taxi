@@ -3,20 +3,28 @@ import numpy as np
 INPUT_SIZE = 25
 
 
+def cell_to_position(cell):
+    return cell[0] * 5 + cell[1]
+
+
 def build_input(environment, state):
     env_vector = np.full(INPUT_SIZE, 0.0, dtype=float)
     taxi_row, taxi_col, pass_loc, dest = environment.decode(state)
-    taxi_pos = taxi_row * 5 + taxi_col
+    taxi_pos = cell_to_position((taxi_row, taxi_col))
     if pass_loc != 4:
         passenger_cell = environment.locs[pass_loc]
-        pass_pos = passenger_cell[0] * 5 + passenger_cell[1]
+        pass_pos = cell_to_position(passenger_cell)
     else:
         pass_pos = taxi_pos
     destination_cell = environment.locs[dest]
-    dest_pos = destination_cell[0] * 5 + destination_cell[1]
-    env_vector[pass_pos] = 0.5
-    env_vector[dest_pos] = 0.8
-    env_vector[taxi_pos] += 1
+    dest_pos = cell_to_position(destination_cell)
+    env_vector[cell_to_position(environment.locs[0])] = 0.1
+    env_vector[cell_to_position(environment.locs[1])] = 0.1
+    env_vector[cell_to_position(environment.locs[2])] = 0.1
+    env_vector[cell_to_position(environment.locs[3])] = 0.1
+    env_vector[taxi_pos] = 1
+    env_vector[dest_pos] += 0.7
+    env_vector[pass_pos] += 0.4
     return env_vector
 
 
