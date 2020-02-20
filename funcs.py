@@ -7,10 +7,16 @@ def build_input(environment, state):
     env_vector = np.full(INPUT_SIZE, 0.0, dtype=float)
     taxi_row, taxi_col, pass_loc, dest = environment.decode(state)
     taxi_pos = taxi_row * 5 + taxi_col
-    passenger_cell = environment.locs[pass_loc]
-    pass_pos = passenger_cell[0] * 5 + passenger_cell[1]
+    if pass_loc != 4:
+        passenger_cell = environment.locs[pass_loc]
+        pass_pos = passenger_cell[0] * 5 + passenger_cell[1]
+    else:
+        pass_pos = taxi_pos
+    destination_cell = environment.locs[dest]
+    dest_pos = destination_cell[0] * 5 + destination_cell[1]
     env_vector[pass_pos] = 0.5
-    env_vector[taxi_pos] = 1
+    env_vector[dest_pos] = 0.8
+    env_vector[taxi_pos] += 1
     return env_vector
 
 

@@ -9,13 +9,19 @@ env = gym.make("Taxi-v3").env
 plt.ion()
 
 
-def calculate_reward(old, new_s, steps):
-    if old == new_s:
+def calculate_reward(old, new_s, steps, last_action):
+    if old == new_s and last_action < 4:
         return -3, True, False
-    taxi_row, taxi_col, passenger, destination = env.decode(new_s)
-    pass_loc = env.locs[passenger]
-    if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col:
+    taxi_row, taxi_col, passenger, destination = env.decode(old)
+    destination_loc = env.locs[destination]
+    if passenger == 4 and destination_loc[0] == taxi_row and destination_loc[1] == taxi_col and last_action == 5:
         return 8, True, True
+    if passenger < 4:
+        pass_loc = env.locs[passenger]
+        if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col and last_action == 4:
+            return 3, False, False
+    if last_action > 3:
+        return -8, True, False
     if steps == 20:
         return -0.07, True, False
     return -0.07, False, False
@@ -69,7 +75,7 @@ if __name__ == '__main__':
             old_state = new_state
             new_state, reward, done, info = env.step(max_action)
             k += 1
-            my_reward, end, reset = calculate_reward(old_state, new_state, k)
+            my_reward, end, reset = calculate_reward(old_state, new_state, k, int(max_action))
 
             print(action, my_reward, total_wins, "Episodes: ", episodes, "Iteration: ", iteration)
             print('Average: %.3f' % avg)
@@ -87,7 +93,7 @@ if __name__ == '__main__':
         network.train(prepare_input(states), prepare_action_rewards(rewards))
         episodes += 1
 
-        if my_reward > 1:
+        if done:
             total_wins += 1
             performance.append(episodes)
             episodes = 0

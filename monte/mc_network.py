@@ -2,7 +2,7 @@ import numpy as np
 import torch as tr
 from torch import nn
 
-ACTION_SIZE = 4
+ACTION_SIZE = 6
 GAMMA = 0.6
 ADVANTAGE_THRESHOLD = 0.015
 
@@ -24,7 +24,7 @@ class McNetwork:
         self.model = nn.Sequential(
             nn.Linear(input_size, 16),
             nn.Sigmoid(),
-            nn.Linear(16, 4),
+            nn.Linear(16, ACTION_SIZE),
         )
 
     def predict(self, data):
