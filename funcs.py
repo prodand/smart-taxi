@@ -9,22 +9,20 @@ def cell_to_position(cell):
 
 def build_input(environment, state):
     env_vector = np.full(INPUT_SIZE, 0.0, dtype=float)
+    env_vector[cell_to_position(environment.locs[0])] = 0.05
+    env_vector[cell_to_position(environment.locs[1])] = 0.05
+    env_vector[cell_to_position(environment.locs[2])] = 0.05
+    env_vector[cell_to_position(environment.locs[3])] = 0.05
     taxi_row, taxi_col, pass_loc, dest = environment.decode(state)
     taxi_pos = cell_to_position((taxi_row, taxi_col))
+    dest_pos = cell_to_position(environment.locs[dest])
     if pass_loc != 4:
-        passenger_cell = environment.locs[pass_loc]
-        pass_pos = cell_to_position(passenger_cell)
+        pass_pos = cell_to_position(environment.locs[pass_loc])
+        env_vector[taxi_pos] = 0.5
+        env_vector[pass_pos] += 0.3
     else:
-        pass_pos = taxi_pos
-    destination_cell = environment.locs[dest]
-    dest_pos = cell_to_position(destination_cell)
-    env_vector[cell_to_position(environment.locs[0])] = 0.1
-    env_vector[cell_to_position(environment.locs[1])] = 0.1
-    env_vector[cell_to_position(environment.locs[2])] = 0.1
-    env_vector[cell_to_position(environment.locs[3])] = 0.1
-    env_vector[taxi_pos] = 1
-    env_vector[dest_pos] += 0.7
-    env_vector[pass_pos] += 0.4
+        env_vector[taxi_pos] = 0.9
+        env_vector[dest_pos] += 0.6
     return env_vector
 
 

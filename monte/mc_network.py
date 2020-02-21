@@ -46,7 +46,7 @@ class McNetwork:
             G = tr.tensor(rewards[i:i+1]).max()
             loss.backward()
             for f in self.model.parameters():
-                f.data.add_(G * f.grad.data * 0.005)
+                f.data.add_(G * f.grad.data * 0.001)
             after = self.predict(state)
             idx = int(action.max())
             if G < 0 and before[idx] < after[idx]:
