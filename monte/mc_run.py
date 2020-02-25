@@ -9,19 +9,24 @@ env = gym.make("Taxi-v3").env
 plt.ion()
 
 
+DROP_OFF_REWARD = 5
+PICK_UP_REWARD = 3
+ILLEGAL_PICKUP_DROP_OFF = -2
+
+
 def calculate_reward(old, new_s, steps, last_action):
     if old == new_s and last_action < 4:
         return -0.8, True, False
     taxi_row, taxi_col, passenger, destination = env.decode(old)
     destination_loc = env.locs[destination]
     if passenger == 4 and destination_loc[0] == taxi_row and destination_loc[1] == taxi_col and last_action == 5:
-        return 1, True, True
+        return DROP_OFF_REWARD, True, True
     if passenger < 4:
         pass_loc = env.locs[passenger]
         if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col and last_action == 4:
-            return 3, True, False
+            return PICK_UP_REWARD, True, False
     if last_action > 3:
-        return -2, True, False
+        return ILLEGAL_PICKUP_DROP_OFF, True, False
     if steps == 20:
         return -0.01, True, False
     return -0.01, False, False
