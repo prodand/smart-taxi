@@ -11,7 +11,7 @@ plt.ion()
 
 def calculate_reward(old, new_s, steps, last_action):
     if old == new_s and last_action < 4:
-        return -0.5, True, False
+        return -0.8, True, False
     taxi_row, taxi_col, passenger, destination = env.decode(old)
     destination_loc = env.locs[destination]
     if passenger == 4 and destination_loc[0] == taxi_row and destination_loc[1] == taxi_col and last_action == 5:
@@ -19,12 +19,12 @@ def calculate_reward(old, new_s, steps, last_action):
     if passenger < 4:
         pass_loc = env.locs[passenger]
         if pass_loc[0] == taxi_row and pass_loc[1] == taxi_col and last_action == 4:
-            return 2, True, False
+            return 3, True, False
     if last_action > 3:
         return -2, True, False
-    if steps == 40:
-        return -0.07, True, False
-    return -0.07, False, False
+    if steps == 20:
+        return -0.01, True, False
+    return -0.01, False, False
 
 
 def prepare_input(parking_states):
