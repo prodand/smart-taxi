@@ -22,9 +22,9 @@ class McNetwork:
     def __init__(self, input_size):
         self.input_size = input_size
         self.model = nn.Sequential(
-            nn.Linear(input_size, 32),
+            nn.Linear(input_size, 16),
             nn.Sigmoid(),
-            nn.Linear(32, ACTION_SIZE),
+            nn.Linear(16, ACTION_SIZE),
         )
 
     def predict(self, data):
@@ -46,7 +46,7 @@ class McNetwork:
             G = tr.tensor(rewards[i:i+1]).max()
             loss.backward()
             for f in self.model.parameters():
-                f.data.add_(G * f.grad.data * 0.003)
+                f.data.add_(G * f.grad.data * 0.007)
             after = self.predict(state)
             idx = int(action.max())
             if G < 0 and before[idx] < after[idx]:
